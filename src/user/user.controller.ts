@@ -37,19 +37,8 @@ export class UserController {
 
   @Post('/login')
   @HttpCode(200)
-  async login(@Body() loginUserDto: LoginUserDto, @Res() res: Response) {
-    const result = await this.userService.login(loginUserDto);
-
-    res.cookie('token', result.result.token, {
-      httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000,
-      path: '/',
-      sameSite: 'none',
-      secure: process.env.NODE_ENV === 'production',
-      domain: 'https://chat-frontend-drab-eight.vercel.app',
-    });
-
-    return res.status(200).send(result);
+  async login(@Body() loginUserDto: LoginUserDto) {
+    return this.userService.login(loginUserDto);
   }
 
   @Post('/verify-email')
@@ -85,15 +74,6 @@ export class UserController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.userService.remove(id);
-  }
-
-  @UseGuards(AuthGuard)
-  @Post('/logout')
-  logout(@Res() res: Response) {
-    return res
-      .clearCookie('token')
-      .status(200)
-      .send(responseResult(null, true, 'Logout successfully.'));
   }
 
   @Post('google/callback')
