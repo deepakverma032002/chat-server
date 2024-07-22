@@ -46,6 +46,7 @@ export class UserController {
       path: '/',
       sameSite: 'none',
       secure: process.env.NODE_ENV === 'production',
+      domain: 'https://chat-frontend-drab-eight.vercel.app',
     });
 
     return res.status(200).send(result);
