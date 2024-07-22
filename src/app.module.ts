@@ -12,14 +12,10 @@ import { JwtService } from '@nestjs/jwt';
     ConfigModule.forRoot({ isGlobal: true }),
     SequelizeModule.forRoot({
       dialect: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: '123456',
-      database: 'chat-app',
       autoLoadModels: true,
       synchronize: true,
       sync: { alter: true },
+      uri: process.env.DB_URL,
     }),
     UserModule,
     CacheModule.register({
