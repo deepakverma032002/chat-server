@@ -8,7 +8,6 @@ import {
   Delete,
   UseGuards,
   Req,
-  Res,
   HttpCode,
 } from '@nestjs/common';
 import { UserService } from './user.service';
@@ -22,8 +21,7 @@ import {
 } from './dto/login-user.dto';
 import { AuthGuard } from 'src/Decorators/guards/auth.guard';
 import { RequestWithUser } from './interface';
-import { Response } from 'express';
-import { responseResult } from 'src/utils/response-result';
+import { GoogleAuthDto } from './dto/social-auth.dto';
 
 @ApiTags('User')
 @Controller('user')
@@ -76,9 +74,8 @@ export class UserController {
     return this.userService.remove(id);
   }
 
-  @Post('google/callback')
-  googleCallback(@Req() req: RequestWithUser, @Res() res: Response) {
-    console.log(req);
-    res.status(200).send(responseResult(null, true, 'Login successfully.'));
+  @Post('/auth/google')
+  googleAuth(@Body() data: GoogleAuthDto) {
+    return this.userService.googleAuthService(data);
   }
 }

@@ -11,6 +11,7 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Chat Server')
+    .addBearerAuth()
     .setDescription('The Chat server')
     .setVersion('1.0')
     .build();

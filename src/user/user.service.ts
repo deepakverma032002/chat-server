@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import * as argon2 from 'argon2';
 import { JwtService } from '@nestjs/jwt';
+import { gaxios, OAuth2Client } from 'google-auth-library';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -22,6 +23,7 @@ import sendMail from 'src/utils/sendMail';
 import { htmlContent } from 'src/utils/emailTemplate';
 import { responseResult } from 'src/utils/response-result';
 import { User } from './entities/user.entity';
+import { GoogleAuthDto } from './dto/social-auth.dto';
 
 @Injectable()
 export class UserService {
@@ -43,7 +45,6 @@ export class UserService {
     const hash = await argon2.hash(createUserDto.password);
     delete createUserDto.confirmPassword;
     const savedData = { ...createUserDto, password: hash };
-    console.log(savedData);
     const user = await this.user.create(savedData);
     return responseResult(user, true, 'User created successfully.');
   }
@@ -66,6 +67,10 @@ export class UserService {
         'Please verified your email first.',
         'NOT_VERIFIED',
       );
+    }
+
+    if (!user.password) {
+      throw new BadRequestException('Login with google please.', 'NOT_SET');
     }
 
     const isMatch = await argon2.verify(user.password, loginUserDto.password);
@@ -205,5 +210,61 @@ export class UserService {
     await user.save();
 
     return responseResult(null, true, 'User deleted successfully.');
+  }
+
+  async googleAuthService(data: GoogleAuthDto) {
+    const client = new OAuth2Client(
+      process.env.AUTH_GOOGLE_ID,
+      process.env.AUTH_GOOGLE_SECRET,
+      process.env.FRONTEND_URL,
+    );
+
+    const token = await client.getToken(data.authCode);
+
+    if (!token) {
+      throw new BadRequestException('Invalid Google Auth Code');
+    }
+
+    const { access_token } = token.tokens;
+    const userData = await gaxios.request<any>({
+      url: 'https://www.googleapis.com/oauth2/v3/userinfo',
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+      },
+    });
+
+    const isEmailExist = await this.user.findOne({
+      where: { email: userData.data.email },
+    });
+
+    if (isEmailExist && data.type === 'signup') {
+      return responseResult(isEmailExist, true, 'User already registered.');
+    }
+
+    if (data.type === 'signup') {
+      const user = await this.user.create({
+        firstName: userData.data.given_name,
+        lastName: userData.data.family_name,
+        email: userData.data.email,
+        image: userData.data.picture,
+        isVerified: true,
+      });
+
+      return responseResult(user, true, 'User created successfully.');
+    } else {
+      const payload = { sub: isEmailExist.id, role: isEmailExist.role };
+      const access_token = await this.jwtService.signAsync(payload, {
+        secret: this.configService.get<string>('JWT_SECRET'),
+        expiresIn: '1d',
+      });
+
+      return responseResult(
+        {
+          token: access_token,
+        },
+        true,
+        'User logged in successfully.',
+      );
+    }
   }
 }
