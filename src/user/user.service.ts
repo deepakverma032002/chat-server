@@ -221,16 +221,14 @@ export class UserService {
 
     const token = await client.getToken(data.authCode);
 
+    client.setCredentials(token.tokens);
+
     if (!token) {
       throw new BadRequestException('Invalid Google Auth Code');
     }
-
     const { access_token } = token.tokens;
     const userData = await gaxios.request<any>({
-      url: 'https://www.googleapis.com/oauth2/v3/userinfo',
-      headers: {
-        Authorization: `Bearer ${access_token}`,
-      },
+      url: `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${access_token}`,
     });
 
     const isEmailExist = await this.user.findOne({

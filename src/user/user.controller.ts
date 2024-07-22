@@ -9,6 +9,7 @@ import {
   UseGuards,
   Req,
   HttpCode,
+  Res,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -22,6 +23,7 @@ import {
 import { AuthGuard } from 'src/Decorators/guards/auth.guard';
 import { RequestWithUser } from './interface';
 import { GoogleAuthDto } from './dto/social-auth.dto';
+import { Request, Response } from 'express';
 
 @ApiTags('User')
 @Controller('user')
@@ -77,5 +79,11 @@ export class UserController {
   @Post('/auth/google')
   googleAuth(@Body() data: GoogleAuthDto) {
     return this.userService.googleAuthService(data);
+  }
+
+  @Post('/auth/google/callback')
+  googleCallback(@Req() req: Request, @Res() res: Response) {
+    console.log(req);
+    res.status(200).send(req);
   }
 }
