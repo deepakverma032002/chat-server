@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import * as argon2 from 'argon2';
 import { JwtService } from '@nestjs/jwt';
-import { gaxios, OAuth2Client } from 'google-auth-library';
+import { OAuth2Client } from 'google-auth-library';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -24,6 +24,7 @@ import { htmlContent } from 'src/utils/emailTemplate';
 import { responseResult } from 'src/utils/response-result';
 import { User } from './entities/user.entity';
 import { GoogleAuthDto } from './dto/social-auth.dto';
+import axios from 'axios';
 
 @Injectable()
 export class UserService {
@@ -216,7 +217,7 @@ export class UserService {
     const client = new OAuth2Client(
       process.env.AUTH_GOOGLE_ID,
       process.env.AUTH_GOOGLE_SECRET,
-      process.env.FRONTEND_URL,
+      'postmessage',
     );
 
     const token = await client.getToken(data.authCode);
@@ -227,9 +228,9 @@ export class UserService {
       throw new BadRequestException('Invalid Google Auth Code');
     }
     const { access_token } = token.tokens;
-    const userData = await gaxios.request<any>({
-      url: `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${access_token}`,
-    });
+    const userData = await axios.get<any>(
+      `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${access_token}`,
+    );
 
     const isEmailExist = await this.user.findOne({
       where: { email: userData.data.email },
